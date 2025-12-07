@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCS - Hệ Thống Điều Khiển Từ Xa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-area"></div>
+
+    <div id="overlay-login" class="overlay active">
+        <div class="card glass-card p-4 text-center" style="max-width: 400px; width: 100%;">
+            <div class="mb-4">
+                <div class="icon-box mx-auto bg-primary text-white mb-3">
+                    <i class="fas fa-network-wired fa-2x"></i>
+                </div>
+                <h3 class="fw-bold">Kết Nối Server</h3>
+                <p class="text-muted small">Nhập thông tin máy chủ để bắt đầu điều khiển</p>
+            </div>
+            
+            <div class="form-floating mb-3 text-start">
+                <input type="text" class="form-control" id="inp-ip" placeholder="IP" value="127.0.0.1">
+                <label>Địa chỉ IP</label>
+            </div>
+            
+            <div class="row g-2 mb-4">
+                <div class="col-8">
+                    <div class="form-floating text-start">
+                        <input type="password" class="form-control" id="inp-pass" placeholder="Pass">
+                        <label>Mật khẩu truy cập</label>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="form-floating text-start">
+                        <input type="number" class="form-control" id="inp-port" placeholder="Port" value="8181">
+                        <label>Port</label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary w-100 py-2 fw-bold shadow-sm" id="btn-connect">
+                <i class="fas fa-plug me-2"></i> KẾT NỐI
+            </button>
+            <div id="login-msg" class="text-danger mt-3 small fw-bold"></div>
+        </div>
+    </div>
+
+    <div id="overlay-reconnect" class="overlay bg-dark bg-opacity-75" style="display: none; z-index: 2000;">
+        <div class="text-center text-white">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <h5>Mất kết nối tới Server...</h5>
+            <p class="small text-white-50">Đang thử kết nối lại (<span id="retry-count">0</span>)</p>
+            <button class="btn btn-sm btn-outline-light mt-2">Tải lại trang</button>
+        </div>
+    </div>
+
+    <div id="app-wrapper" class="d-flex h-100 opacity-25 disabled-events">
+        
+        <nav class="sidebar d-flex flex-column flex-shrink-0 p-3 bg-white border-end">
+            <a href="#" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
+                <span class="fs-5 fw-bold text-primary"><i class="fas fa-shield-alt me-2"></i>RCS Panel</span>
+            </a>
+            <hr>
+            <ul class="nav nav-pills flex-column mb-auto gap-2" id="main-tabs">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-tab="dashboard">
+                        <i class="fas fa-th-large me-2"></i> Tổng quan
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-tab="screen">
+                        <i class="fas fa-desktop me-2"></i> Màn hình
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-tab="process">
+                        <i class="fas fa-microchip me-2"></i> Tiến trình
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-tab="logs">
+                        <i class="fas fa-terminal me-2"></i> Logs & Key
+                    </a>
+                </li>
+            </ul>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center px-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="status-dot bg-success"></span>
+                    <small class="text-muted fw-bold">Online</small>
+                </div>
+                <button class="btn btn-sm btn-light text-danger" id="btn-disconnect" title="Ngắt kết nối">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </nav>
+
+        <main class="flex-grow-1 bg-light p-4 overflow-auto">
+            
+            <div id="view-dashboard" class="view-section active">
+                <h4 class="mb-4 text-dark fw-bold">Bảng Điều Khiển Nhanh</h4>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <h6 class="fw-bold">Nguồn Hệ Thống</h6>
+                                    <i class="fas fa-power-off text-danger"></i>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-danger btn-action" data-cmd="SHUTDOWN">Shutdown</button>
+                                    <button class="btn btn-outline-warning btn-action" data-cmd="RESTART">Restart</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm h-100 hover-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <h6 class="fw-bold">Chạy Ứng Dụng</h6>
+                                    <i class="fas fa-rocket text-primary"></i>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="quick-app" placeholder="Ví dụ: notepad">
+                                    <button class="btn btn-primary" id="btn-quick-run"><i class="fas fa-play"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-screen" class="view-section" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="fw-bold m-0">Live Monitor</h4>
+                    <div class="btn-group">
+                        <button class="btn btn-success" id="btn-toggle-stream"><i class="fas fa-video me-2"></i>Start Stream</button>
+                        <button class="btn btn-outline-secondary" id="btn-capture"><i class="fas fa-camera"></i> Snapshot</button>
+                    </div>
+                </div>
+                <div class="monitor-container rounded shadow">
+                    <div id="stream-loading" class="position-absolute top-50 start-50 translate-middle text-center text-muted">
+                        <i class="fas fa-video-slash fa-3x mb-2"></i>
+                        <p>Chưa có tín hiệu</p>
+                    </div>
+                    <img id="live-image" class="img-fluid w-100 h-100" style="object-fit: contain; display: none;">
+                    <span class="badge bg-danger position-absolute top-0 end-0 m-2" id="live-badge" style="display:none;">LIVE</span>
+                </div>
+            </div>
+
+            <div id="view-process" class="view-section" style="display: none;">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 fw-bold">Danh sách tiến trình</h6>
+                        <button class="btn btn-sm btn-primary btn-action" data-cmd="GET_PROCESS"><i class="fas fa-sync me-1"></i> Làm mới</button>
+                    </div>
+                    <div class="table-responsive" style="max-height: 500px;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>PID</th>
+                                    <th>Tên Tiến Trình</th>
+                                    <th>Bộ Nhớ</th>
+                                    <th class="text-end">Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="process-table-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-logs" class="view-section" style="display: none;">
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-dark btn-action" data-cmd="START_KEYLOG"><i class="fas fa-keyboard me-2"></i>Start Keylog</button>
+                    <button class="btn btn-outline-secondary btn-action" data-cmd="STOP_KEYLOG">Stop</button>
+                    <button class="btn btn-outline-danger ms-auto" id="btn-clear-log">Xóa Log</button>
+                </div>
+                <div class="terminal-box" id="terminal-output">
+                    <div class="text-success">[SYSTEM] Ready to connect...</div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

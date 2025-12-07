@@ -1,0 +1,24 @@
+:root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg-body: #f3f4f6;
+    --bg-sidebar: #ffffff;
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --terminal-bg: #1e1e1e;
+    --terminal-text: #4ade80;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-body);
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+}
+
+/* Scrollbar tùy chỉnh */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }

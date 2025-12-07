@@ -1,0 +1,58 @@
+/* OVERLAYS (Màn hình đăng nhập & mất kết nối) */
+/* OVERLAYS (Màn hình đăng nhập & mất kết nối) */
+.overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1050;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.4); /* Thêm màu nền tối mờ cho đẹp */
+    
+    /* TRẠNG THÁI MẶC ĐỊNH: ẨN ĐI */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none; /* Để chuột bấm xuyên qua được khi ẩn */
+    
+    transition: all 0.3s ease;
+}
+
+/* KHI CÓ CLASS ACTIVE: HIỆN LÊN */
+.overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto; /* Chặn chuột để người dùng phải đăng nhập */
+}
+
+/* Phần còn lại giữ nguyên... */
+
+/* SIDEBAR & NAV */
+.sidebar {
+    width: 260px;
+    transition: all 0.3s;
+}
+
+.nav-link {
+    color: var(--text-muted);
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    background-color: #f3f4f6;
+    color: var(--primary);
+}
+
+.nav-link.active {
+    background-color: var(--primary) !important;
+    color: white !important;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+/* Disabled State cho App khi chưa login */
+.disabled-events {
+    pointer-events: none;
+    user-select: none;
+}
