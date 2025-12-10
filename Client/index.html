@@ -3,197 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCS - Hệ Thống Điều Khiển Từ Xa</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="css/main.css">
-</head>
-<body>
-
-    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-area"></div>
-
-    <div id="overlay-login" class="overlay active">
-        <div class="card glass-card p-4 text-center" style="max-width: 400px; width: 100%;">
-            <div class="mb-4">
-                <div class="icon-box mx-auto bg-primary text-white mb-3">
-                    <i class="fas fa-network-wired fa-2x"></i>
-                </div>
-                <h3 class="fw-bold">Kết Nối Server</h3>
-                <p class="text-muted small">Nhập thông tin máy chủ để bắt đầu điều khiển</p>
-            </div>
-            
-            <div class="form-floating mb-3 text-start">
-                <input type="text" class="form-control" id="inp-ip" placeholder="IP" value="127.0.0.1">
-                <label>Địa chỉ IP</label>
-            </div>
-            
-            <div class="row g-2 mb-4">
-                <div class="col-8">
-                    <div class="form-floating text-start">
-                        <input type="password" class="form-control" id="inp-pass" placeholder="Pass">
-                        <label>Mật khẩu truy cập</label>
-                    </div>
-                </div>
-                <div class="col-4">
-                    <div class="form-floating text-start">
-                        <input type="number" class="form-control" id="inp-port" placeholder="Port" value="8181">
-                        <label>Port</label>
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn btn-primary w-100 py-2 fw-bold shadow-sm" id="btn-connect">
-                <i class="fas fa-plug me-2"></i> KẾT NỐI
-            </button>
-            <div id="login-msg" class="text-danger mt-3 small fw-bold"></div>
-        </div>
-    </div>
-
-    <div id="overlay-reconnect" class="overlay bg-dark bg-opacity-75" style="display: none; z-index: 2000;">
-        <div class="text-center text-white">
-            <div class="spinner-border text-primary mb-3" role="status"></div>
-            <h5>Mất kết nối tới Server...</h5>
-            <p class="small text-white-50">Đang thử kết nối lại (<span id="retry-count">0</span>)</p>
-            <button class="btn btn-sm btn-outline-light mt-2">Tải lại trang</button>
-        </div>
-    </div>
-
-    <div id="app-wrapper" class="d-flex h-100 opacity-25 disabled-events">
+    <title>REMOTE CONTROL TERMINAL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'hacker-black': '#050505',
+                        'hacker-green': '#00ff41',
+                        'hacker-dark-green': '#003b00',
+                        'hacker-red': '#ff0000',
+                    },
+                    fontFamily: {
+                        'mono': ['"Courier New"', 'Courier', 'monospace'],
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #003b00 1px, transparent 1px), linear-gradient(to bottom, #003b00 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Hiệu ứng quét màn hình CRT cũ */
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 10;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0, 255, 65, 0.04) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100%; }
+        }
         
-        <nav class="sidebar d-flex flex-column flex-shrink-0 p-3 bg-white border-end">
-            <a href="#" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
-                <span class="fs-5 fw-bold text-primary"><i class="fas fa-shield-alt me-2"></i>RCS Panel</span>
-            </a>
-            <hr>
-            <ul class="nav nav-pills flex-column mb-auto gap-2" id="main-tabs">
-                <li class="nav-item">
-                    <a href="#" class="nav-link active" data-tab="dashboard">
-                        <i class="fas fa-th-large me-2"></i> Tổng quan
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="nav-link" data-tab="screen">
-                        <i class="fas fa-desktop me-2"></i> Màn hình
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="nav-link" data-tab="process">
-                        <i class="fas fa-microchip me-2"></i> Tiến trình
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="nav-link" data-tab="logs">
-                        <i class="fas fa-terminal me-2"></i> Logs & Key
-                    </a>
-                </li>
-            </ul>
-            <hr>
-            <div class="d-flex justify-content-between align-items-center px-2">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="status-dot bg-success"></span>
-                    <small class="text-muted fw-bold">Online</small>
-                </div>
-                <button class="btn btn-sm btn-light text-danger" id="btn-disconnect" title="Ngắt kết nối">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
-        </nav>
+        /* Custom Scrollbar cho đúng chất Hacker */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; border-left: 1px solid #003b00; }
+        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        ::-webkit-scrollbar-thumb:hover { background: #fff; }
+    </style>
+</head>
+<body class="bg-hacker-black text-hacker-green font-mono h-screen w-screen overflow-hidden relative selection:bg-hacker-green selection:text-black">
 
-        <main class="flex-grow-1 bg-light p-4 overflow-auto">
-            
-            <div id="view-dashboard" class="view-section active">
-                <h4 class="mb-4 text-dark fw-bold">Bảng Điều Khiển Nhanh</h4>
-                <div class="row g-4">
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card border-0 shadow-sm h-100 hover-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between mb-3">
-                                    <h6 class="fw-bold">Nguồn Hệ Thống</h6>
-                                    <i class="fas fa-power-off text-danger"></i>
-                                </div>
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-outline-danger btn-action" data-cmd="SHUTDOWN">Shutdown</button>
-                                    <button class="btn btn-outline-warning btn-action" data-cmd="RESTART">Restart</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card border-0 shadow-sm h-100 hover-card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between mb-3">
-                                    <h6 class="fw-bold">Chạy Ứng Dụng</h6>
-                                    <i class="fas fa-rocket text-primary"></i>
-                                </div>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="quick-app" placeholder="Ví dụ: notepad">
-                                    <button class="btn btn-primary" id="btn-quick-run"><i class="fas fa-play"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <div class="absolute inset-0 bg-grid-pattern bg-[length:40px_40px] opacity-20 pointer-events-none"></div>
+    <div class="scanline"></div>
+
+    <main class="relative w-full h-full p-4">
+        
+        <div class="absolute top-4 left-4 flex flex-col gap-6 z-0">
+            <div class="group flex flex-col items-center cursor-pointer w-24">
+                <div class="w-16 h-16 border border-hacker-green bg-black flex items-center justify-center group-hover:bg-hacker-green group-hover:text-black transition-colors shadow-[0_0_10px_rgba(0,255,65,0.3)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+                    </svg>
                 </div>
+                <span class="mt-2 text-xs bg-black px-1 border border-transparent group-hover:border-hacker-green">MONITOR.EXE</span>
             </div>
 
-            <div id="view-screen" class="view-section" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="fw-bold m-0">Live Monitor</h4>
-                    <div class="btn-group">
-                        <button class="btn btn-success" id="btn-toggle-stream"><i class="fas fa-video me-2"></i>Start Stream</button>
-                        <button class="btn btn-outline-secondary" id="btn-capture"><i class="fas fa-camera"></i> Snapshot</button>
-                    </div>
+            <div class="group flex flex-col items-center cursor-pointer w-24">
+                <div class="w-16 h-16 border border-hacker-green bg-black flex items-center justify-center group-hover:bg-hacker-green group-hover:text-black transition-colors shadow-[0_0_10px_rgba(0,255,65,0.3)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                    </svg>
                 </div>
-                <div class="monitor-container rounded shadow">
-                    <div id="stream-loading" class="position-absolute top-50 start-50 translate-middle text-center text-muted">
-                        <i class="fas fa-video-slash fa-3x mb-2"></i>
-                        <p>Chưa có tín hiệu</p>
-                    </div>
-                    <img id="live-image" class="img-fluid w-100 h-100" style="object-fit: contain; display: none;">
-                    <span class="badge bg-danger position-absolute top-0 end-0 m-2" id="live-badge" style="display:none;">LIVE</span>
-                </div>
+                <span class="mt-2 text-xs bg-black px-1 border border-transparent group-hover:border-hacker-green">KEYLOG.LOG</span>
             </div>
 
-            <div id="view-process" class="view-section" style="display: none;">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <h6 class="m-0 fw-bold">Danh sách tiến trình</h6>
-                        <button class="btn btn-sm btn-primary btn-action" data-cmd="GET_PROCESS"><i class="fas fa-sync me-1"></i> Làm mới</button>
-                    </div>
-                    <div class="table-responsive" style="max-height: 500px;">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th>PID</th>
-                                    <th>Tên Tiến Trình</th>
-                                    <th>Bộ Nhớ</th>
-                                    <th class="text-end">Hành Động</th>
-                                </tr>
-                            </thead>
-                            <tbody id="process-table-body">
-                                </tbody>
-                        </table>
-                    </div>
+            <div class="group flex flex-col items-center cursor-pointer w-24">
+                <div class="w-16 h-16 border border-hacker-green bg-black flex items-center justify-center group-hover:bg-hacker-green group-hover:text-black transition-colors shadow-[0_0_10px_rgba(0,255,65,0.3)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                        <path stroke-linecap="square" stroke-linejoin="miter" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                    </svg>
+                </div>
+                <span class="mt-2 text-xs bg-black px-1 border border-transparent group-hover:border-hacker-green">SPY_CAM.EXE</span>
+            </div>
+        </div>
+
+        <div class="absolute top-10 left-40 w-[600px] bg-black border border-hacker-green shadow-[0_0_20px_rgba(0,255,65,0.15)] flex flex-col z-10">
+            <div class="bg-hacker-dark-green text-hacker-green px-2 py-1 flex justify-between items-center border-b border-hacker-green cursor-move select-none">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 bg-hacker-green animate-pulse"></span>
+                    <span class="text-sm font-bold tracking-widest">REMOTE_SCREEN :: [LIVE]</span>
+                </div>
+                <div class="flex gap-2">
+                    <button class="hover:bg-hacker-green hover:text-black px-1">_</button>
+                    <button class="hover:bg-hacker-green hover:text-black px-1">□</button>
+                    <button class="hover:bg-hacker-red hover:text-black px-1 text-hacker-red font-bold">X</button>
                 </div>
             </div>
-
-            <div id="view-logs" class="view-section" style="display: none;">
-                <div class="d-flex gap-2 mb-3">
-                    <button class="btn btn-dark btn-action" data-cmd="START_KEYLOG"><i class="fas fa-keyboard me-2"></i>Start Keylog</button>
-                    <button class="btn btn-outline-secondary btn-action" data-cmd="STOP_KEYLOG">Stop</button>
-                    <button class="btn btn-outline-danger ms-auto" id="btn-clear-log">Xóa Log</button>
-                </div>
-                <div class="terminal-box" id="terminal-output">
-                    <div class="text-success">[SYSTEM] Ready to connect...</div>
+            <div class="p-1 relative group">
+                <div class="w-full h-80 bg-gray-900 flex items-center justify-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('https://media.giphy.com/media/A06UFEx8jxEwU/giphy.gif')] bg-cover opacity-20"></div>
+                    <p class="text-hacker-green animate-pulse z-10">> WAITING FOR SIGNAL...</p>
+                    <p class="text-xs text-gray-500 absolute bottom-2 right-2">Bitrate: 0kbps</p>
                 </div>
             </div>
+            <div class="bg-black text-xs p-1 border-t border-hacker-green flex justify-between">
+                <span>STATUS: CONNECTED</span>
+                <span>ID: TARGET_01</span>
+            </div>
+        </div>
 
-        </main>
-    </div>
+        <div class="absolute top-40 right-20 w-[400px] bg-black border border-hacker-green shadow-[0_0_20px_rgba(0,255,65,0.15)] flex flex-col z-20">
+            <div class="bg-hacker-dark-green text-hacker-green px-2 py-1 flex justify-between items-center border-b border-hacker-green cursor-move select-none">
+                <span class="text-sm font-bold tracking-widest">SYSTEM_LOG.TXT</span>
+                <button class="hover:bg-hacker-red hover:text-black px-1 text-hacker-red">X</button>
+            </div>
+            <div class="h-48 overflow-y-auto p-2 font-mono text-xs text-hacker-green space-y-1">
+                <p><span class="text-gray-500">[10:00:01]</span> > Initializing handshake...</p>
+                <p><span class="text-gray-500">[10:00:02]</span> > Connection established.</p>
+                <p><span class="text-gray-500">[10:00:05]</span> > Target OS: Windows 11</p>
+                <p><span class="text-gray-500">[10:00:06]</span> > User: Admin</p>
+                <p><span class="text-hacker-red">[10:05:12]</span> > Keylogger service started.</p>
+                <p class="animate-pulse">> _</p>
+            </div>
+        </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script type="module" src="js/main.js"></script>
+    </main>
+
+    <footer class="fixed bottom-0 left-0 w-full h-10 bg-black border-t border-hacker-green flex items-center px-2 justify-between z-50">
+        <div class="flex items-center gap-4">
+            <button class="bg-hacker-green text-black font-bold px-4 py-1 hover:bg-white hover:text-black transition-colors uppercase text-sm">
+                START_MENU
+            </button>
+            <div class="h-6 w-px bg-hacker-dark-green"></div>
+            <span class="text-xs text-gray-400">SERVER STATUS: <span class="text-hacker-green animate-pulse">ONLINE</span></span>
+        </div>
+        <div class="text-sm font-bold tracking-widest" id="clock">00:00:00</div>
+    </footer>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
 </body>
 </html>
