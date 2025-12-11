@@ -1,4 +1,7 @@
-import { downloadImageFromBase64, showToast } from '../utils/file.js';
+// Import hàm download từ file.js
+import { downloadImageFromBase64 } from '../utils/file.js';
+// Import hàm showToast từ ui.js (nơi nó thực sự được định nghĩa)
+import { showToast } from '../utils/ui.js';
 
 let objectUrl = null;
 
