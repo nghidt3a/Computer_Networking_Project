@@ -1,5 +1,12 @@
 import { sendCmd } from '../core/socket.js';
-import { downloadVideoFromBase64, showToast } from '../utils/file.js';
+import { downloadVideoFromBase64 } from '../utils/file.js'; // Chỉ lấy hàm download từ file.js
+import { showToast } from '../utils/ui.js'; // Lấy showToast từ ui.js
+
+export function startRecordWebcam() {
+    const duration = document.getElementById("record-duration").value;
+    sendCmd("RECORD_WEBCAM", duration);
+    showToast(`Yêu cầu ghi hình ${duration}s...`, "info");
+}
 
 export function startRecordWebcam() {
     const duration = document.getElementById("record-duration").value;
